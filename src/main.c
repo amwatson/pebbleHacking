@@ -5,10 +5,8 @@
   
 static Window *s_main_window;
 static TextLayer *s_time_layer;
-static TextLayer *s_weather_layer;
 
 static GFont s_time_font;
-static GFont s_weather_font;
 
 static BitmapLayer *s_background_layer;
 static GBitmap *s_background_bitmap;
@@ -74,15 +72,12 @@ static void main_window_unload(Window *window) {
   // Destroy TextLayer
   text_layer_destroy(s_time_layer);
   
-  // Destroy weather elements
-  text_layer_destroy(s_weather_layer);
-  fonts_unload_custom_font(s_weather_font);
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   update_time();
   
-  // Get weather update every 30 minutes
+  // Get time update every 30 minutes
   if(tick_time->tm_min % 30 == 0) {
     // Begin dictionary
     DictionaryIterator *iter;

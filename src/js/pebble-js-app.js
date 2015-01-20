@@ -7,23 +7,24 @@ var xhrRequest = function (url, type, callback) {
   xhr.send();
 };
 
-function locationSuccess(pos) {
+
+function pullTime() {
   // Construct URL
   var url = "http://www.andrew.cmu.edu/user/amwatson/website/test.html";
   console.log("url is" + url);
-  // Send request to OpenWeatherMap
+  // Send request to website
   xhrRequest(url, 'GET', 
     function(responseText) {
-      // responseText contains a JSON object with weather info
+      // responseText contains a JSON object with time info
       var json = JSON.parse(responseText);
 
       // Conditions
-      var conditions = json.main.condition;      
-      console.log("Conditions are " + conditions);
+      var time = json.main.time;      
+      console.log("Conditions are " + time);
       
       // Assemble dictionary using our keys
       var dictionary = {
-        "KEY_TIME": conditions,
+        "KEY_TIME": time,
       };
 
       // Send to Pebble
@@ -39,25 +40,13 @@ function locationSuccess(pos) {
   );
 }
 
-function locationError(err) {
-  console.log("Error requesting location!");
-}
-
-function getWeather() {
-  navigator.geolocation.getCurrentPosition(
-    locationSuccess,
-    locationError,
-    {timeout: 15000, maximumAge: 60000}
-  );
-}
-
 // Listen for when the watchface is opened
 Pebble.addEventListener('ready', 
   function(e) {
     console.log("PebbleKit JS ready!");
 
-    // Get the initial weather
-    getWeather();
+    // Get the initial time
+    pullTime();
   }
 );
 
@@ -65,6 +54,6 @@ Pebble.addEventListener('ready',
 Pebble.addEventListener('appmessage',
   function(e) {
     console.log("AppMessage received!");
-    getWeather();
+    pullTime();
   }                     
 );
