@@ -23,7 +23,7 @@ function locationSuccess(pos) {
       
       // Assemble dictionary using our keys
       var dictionary = {
-        "KEY_CONDITIONS": conditions,
+        "KEY_TIME": conditions,
       };
 
       // Send to Pebble

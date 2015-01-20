@@ -1,7 +1,7 @@
 #include <pebble.h>
   
-#define KEY_TEMPERATURE 0
-#define KEY_CONDITIONS 1
+
+#define KEY_TIME 0
   
 static Window *s_main_window;
 static TextLayer *s_time_layer;
@@ -110,7 +110,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     // Which key was received?
     switch(t->key) {
 
-    case KEY_CONDITIONS:
+    case KEY_TIME:
       snprintf(time_layer_buffer, sizeof(time_layer_buffer), "%s", t->value->cstring);
       break;
     default:
