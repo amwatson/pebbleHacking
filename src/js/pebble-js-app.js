@@ -18,13 +18,11 @@ function pullTime() {
       // responseText contains a JSON object with time info
       var json = JSON.parse(responseText);
 
-      // Conditions
-      var time = json.main.time;      
-      console.log("Conditions are " + time);
       
+      var ticks = json.main.ticks; 
       // Assemble dictionary using our keys
       var dictionary = {
-        "KEY_TIME": time,
+        "KEY_TICKS": ticks,
       };
 
       // Send to Pebble

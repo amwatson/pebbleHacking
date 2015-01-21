@@ -2,6 +2,7 @@
   
 
 #define KEY_TIME 0
+#define KEY_TICKS 1
   
 static Window *s_main_window;
 static TextLayer *s_time_layer;
@@ -11,25 +12,23 @@ static GFont s_time_font;
 static BitmapLayer *s_background_layer;
 static GBitmap *s_background_bitmap;
 
+// we don't have a race because we assume the handler takes less than a minute, and we perform the update before we parse
+int pull_time; // stores last time pulled (number of minutes TODO -- what do we do at midnight?)
+int num_seconds; // number of minutes since pull
+
+// when we pull, let's figure out how many ticks have occurred since boot, and then use a temp variable to record ticks since then?
+// I mean, the current app already does this quey on every tick -- why shouldn't we
+
+
 static void update_time() {
-  // Get a tm structure
-  time_t temp = time(NULL); 
-  struct tm *tick_time = localtime(&temp);
 
   // Create a long-lived buffer
-  static char buffer[] = "00:00";
+  static char buffer[32];
 
-  // Write the current hours and minutes into the buffer
-  if(clock_is_24h_style() == true) {
-    //Use 2h hour format
-    strftime(buffer, sizeof("00:00"), "%H:%M", tick_time);
-  } else {
-    //Use 12 hour format
-    strftime(buffer, sizeof("00:00"), "%I:%M", tick_time);
-  }
+  snprintf(buffer, sizeof(buffer), "%d", pull_time + num_seconds); 
 
   // Display this time on the TextLayer
- // text_layer_set_text(s_time_layer, buffer);
+  text_layer_set_text(s_time_layer, buffer);
 }
 
 static void main_window_load(Window *window) {
@@ -75,10 +74,12 @@ static void main_window_unload(Window *window) {
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
+  num_seconds++;
+  // TODO if minute needs to be updated
   update_time();
   
-  // Get time update every 30 minutes
-  if(tick_time->tm_min % 30 == 0) {
+  // Get time pull update every 10 minutes
+  if(tick_time->tm_min % 10 == 0) {
     // Begin dictionary
     DictionaryIterator *iter;
     app_message_outbox_begin(&iter);
@@ -98,6 +99,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   static char time_layer_buffer[32];
   
   // Read first item
+  
   Tuple *t = dict_read_first(iterator);
 
   // For all items
@@ -106,7 +108,12 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     switch(t->key) {
 
     case KEY_TIME:
-      snprintf(time_layer_buffer, sizeof(time_layer_buffer), "%s", t->value->cstring);
+      //snprintf(time_layer_buffer, sizeof(time_layer_buffer), "%s", t->value->c_string);
+      break;
+    case KEY_TICKS:
+      pull_time = (int)t->value->uint32;
+      num_seconds = 0;
+      snprintf(time_layer_buffer, sizeof(time_layer_buffer), "%d", pull_time);
       break;
     default:
       APP_LOG(APP_LOG_LEVEL_ERROR, "Key %d not recognized!", (int)t->key);
@@ -147,7 +154,7 @@ static void init() {
   window_stack_push(s_main_window, true);
   
   // Register with TickTimerService
-  tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
+  tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
   
   // Register callbacks
   app_message_register_inbox_received(inbox_received_callback);

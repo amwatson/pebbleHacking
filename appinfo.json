@@ -1,5 +1,6 @@
 {
     "appKeys": {
+        "KEY_TICKS": 1,
         "KEY_TIME": 0
     },
     "capabilities": [
