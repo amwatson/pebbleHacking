@@ -14,7 +14,7 @@ static GBitmap *s_background_bitmap;
 
 // we don't have a race because we assume the handler takes less than a minute, and we perform the update before we parse
 int pull_time; // stores last time pulled (number of minutes TODO -- what do we do at midnight?)
-int num_seconds; // number of minutes since pull
+int num_seconds; // number of seconds since pull
 
 // when we pull, let's figure out how many ticks have occurred since boot, and then use a temp variable to record ticks since then?
 // I mean, the current app already does this quey on every tick -- why shouldn't we
@@ -23,10 +23,16 @@ int num_seconds; // number of minutes since pull
 static void update_time() {
 
   // Create a long-lived buffer
-  static char buffer[32];
-
-  snprintf(buffer, sizeof(buffer), "%d", pull_time + num_seconds); 
-
+  static char buffer[] = "00:00:00";
+  int time_cur = pull_time + num_seconds;
+  int hour = (time_cur/(60*60))%24;
+  int minute = ((time_cur%(60*60)/60))%60;
+  int second = (time_cur%(60*60))%60;
+  if (minute < 10) {
+    snprintf(buffer, sizeof(buffer), "%d:0%d:%d", hour, minute, second);
+  } else {
+    snprintf(buffer, sizeof(buffer), "%d:%d:%d", hour, minute, second); 
+  }
   // Display this time on the TextLayer
   text_layer_set_text(s_time_layer, buffer);
 }
@@ -42,10 +48,10 @@ static void main_window_load(Window *window) {
   s_time_layer = text_layer_create(GRect(5, 52, 139, 50));
   text_layer_set_background_color(s_time_layer, GColorClear);
   text_layer_set_text_color(s_time_layer, GColorBlack);
-  text_layer_set_text(s_time_layer, "00:00");
+  text_layer_set_text(s_time_layer, "Loading");
   
   //Create GFont
-  s_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_PERFECT_DOS_48));
+  s_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_PERFECT_DOS_32));
 
   //Apply to TextLayer
   text_layer_set_font(s_time_layer, s_time_font);
@@ -74,9 +80,13 @@ static void main_window_unload(Window *window) {
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
+  // again, we assume our handler works in such a 
+  // way that we'll service this interrupt before the next one, and there will be no race condition
+  // We're not exactly writing robust code here
   num_seconds++;
-  // TODO if minute needs to be updated
-  update_time();
+  if (!((pull_time + num_seconds)%5)) {
+      update_time();
+  }
   
   // Get time pull update every 10 minutes
   if(tick_time->tm_min % 10 == 0) {
@@ -124,8 +134,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     t = dict_read_next(iterator);
   }
   
-  // Assemble full string and display
-  text_layer_set_text(s_time_layer, time_layer_buffer);
+  update_time();
 }
 
 static void inbox_dropped_callback(AppMessageResult reason, void *context) {
