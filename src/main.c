@@ -15,6 +15,7 @@ static GBitmap *s_background_bitmap;
 // we don't have a race because we assume the handler takes less than a minute, and we perform the update before we parse
 int pull_time; // stores last time pulled (number of minutes TODO -- what do we do at midnight?)
 int num_seconds; // number of seconds since pull
+// TODO -- deal with midnight
 
 // when we pull, let's figure out how many ticks have occurred since boot, and then use a temp variable to record ticks since then?
 // I mean, the current app already does this quey on every tick -- why shouldn't we
@@ -25,11 +26,11 @@ static void update_time() {
   // Create a long-lived buffer
   static char buffer[] = "00:00:00";
   int time_cur = pull_time + num_seconds;
-  int hour = (time_cur/(60*60))%24;
-  int minute = ((time_cur%(60*60)/60))%60;
+  int hour = (time_cur/(60*60));
+  int minute = (time_cur%(60*60)/60);
   int second = (time_cur%(60*60))%60;
   if (minute < 10) {
-    snprintf(buffer, sizeof(buffer), "%d:0%d:%d", hour, minute, second);
+    snprintf(buffer, sizeof(buffer), "%d:%0d:%d", hour, minute, second);
   } else {
     snprintf(buffer, sizeof(buffer), "%d:%d:%d", hour, minute, second); 
   }
