@@ -17,9 +17,6 @@ int pull_time; // stores last time pulled (number of minutes TODO -- what do we 
 int num_seconds; // number of seconds since pull
 // TODO -- deal with midnight
 
-// when we pull, let's figure out how many ticks have occurred since boot, and then use a temp variable to record ticks since then?
-// I mean, the current app already does this quey on every tick -- why shouldn't we
-
 
 static void update_time() {
 
@@ -153,6 +150,7 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
 static void init() {
   // Create main Window element and assign to pointer
   s_main_window = window_create();
+   window_set_fullscreen(s_main_window, true);
 
   // Set handlers to manage the elements inside the Window
   window_set_window_handlers(s_main_window, (WindowHandlers) {
