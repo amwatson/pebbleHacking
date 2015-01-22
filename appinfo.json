@@ -12,6 +12,16 @@
     "resources": {
         "media": [
             {
+                "file": "images/white.png",
+                "name": "IMAGE_WHITE",
+                "type": "png"
+            },
+            {
+                "file": "images/black.png",
+                "name": "IMAGE_BLACK",
+                "type": "png"
+            },
+            {
                 "file": "images/background.png",
                 "name": "IMAGE_BACKGROUND",
                 "type": "png"

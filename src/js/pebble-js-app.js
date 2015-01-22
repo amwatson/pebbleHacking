@@ -7,10 +7,16 @@ var xhrRequest = function (url, type, callback) {
   xhr.send();
 };
 
+var xhrPost = function (url, data) {
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", url);
+  xhr.send(data);
+};
+
 
 function pullTime() {
   // Construct URL
-  var url = "http://www.andrew.cmu.edu/user/amwatson/website/test.html";
+  var url = "http://128.237.171.113:1337/";
   console.log("url is" + url);
   // Send request to website
   xhrRequest(url, 'GET', 
@@ -36,6 +42,10 @@ function pullTime() {
       );
     }      
   );
+  
+  xhrPost(url, JSON.stringify({time:1200}));
+  
+  
 }
 
 // Listen for when the watchface is opened
