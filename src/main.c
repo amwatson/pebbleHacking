@@ -8,8 +8,10 @@
 #define NUM_MENU_ICONS 1
 #define NUM_FIRST_MENU_ITEMS 1
 #define NUM_SECOND_MENU_ITEMS 0
-  
+
+int menu_select = 0;
 static Window *s_main_window;
+static Window *s_field_window;
 static TextLayer *s_time_layer;
 
 static GFont s_time_font;
@@ -113,16 +115,59 @@ void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *da
       layer_mark_dirty(menu_layer_get_layer(menu_layer));
       break;
   }
+  window_stack_push(s_field_window, true);
+}
+static void field_window_load(Window *window) {
+ // Here we load the bitmap assets
+  // resource_init_current_app must be called before all asset loading
+  int num_menu_icons = 0;
+  menu_icons[num_menu_icons++] = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_WHITE);
 
+  // And also load the background
+  menu_background = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BACKGROUND);
+  Layer *window_layer = window_get_root_layer(window);
+  GRect bounds = layer_get_frame(window_layer);
+  
+  // Create the menu layer
+  menu_layer = menu_layer_create(bounds);
+
+  // Set all the callbacks for the menu layer
+  menu_layer_set_callbacks(menu_layer, NULL, (MenuLayerCallbacks){
+    .get_num_sections = menu_get_num_sections_callback,
+    .get_num_rows = menu_get_num_rows_callback,
+    .get_header_height = menu_get_header_height_callback,
+    .draw_header = menu_draw_header_callback,
+    .draw_row = menu_draw_row_callback,
+    .select_click = menu_select_callback,
+  });
+
+  // Bind the menu layer's click config provider to the window for interactivity
+  menu_layer_set_click_config_onto_window(menu_layer, window);
+
+  // Add it to the window for display
+  layer_add_child(window_layer, menu_layer_get_layer(menu_layer));
+  
+  // Create time TextLayer
+  s_time_layer = text_layer_create(GRect(5, 75, 139, 50));
+  text_layer_set_background_color(s_time_layer, GColorClear);
+  text_layer_set_text_color(s_time_layer, GColorBlack);
+  text_layer_set_text(s_time_layer, "Loading");
+  
+  //Create GFont
+  s_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_PERFECT_DOS_32));
+
+  //Apply to TextLayer
+  text_layer_set_font(s_time_layer, s_time_font);
+  text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
+
+  // Add it as a child layer to the Window's root layer
+  layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_time_layer));
+  
+  
 }
 
-
 static void main_window_load(Window *window) {
-  //Create GBitmap, then set to created BitmapLayer
-  /*s_background_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BACKGROUND);
-  s_background_layer = bitmap_layer_create(GRect(0, 0, 144, 168));
-  bitmap_layer_set_bitmap(s_background_layer, s_background_bitmap);
-  layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(s_background_layer));*/
+  
   
    // Here we load the bitmap assets
   // resource_init_current_app must be called before all asset loading
@@ -189,6 +234,21 @@ static void main_window_unload(Window *window) {
   
 }
 
+static void field_window_unload(Window *window) {
+  //Unload GFont
+  fonts_unload_custom_font(s_time_font);
+  
+  //Destroy GBitmap
+  gbitmap_destroy(s_background_bitmap);
+
+  //Destroy BitmapLayer
+  bitmap_layer_destroy(s_background_layer);
+  
+  // Destroy TextLayer
+  text_layer_destroy(s_time_layer);
+  
+}
+
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   // again, we assume our handler works in such a 
   // way that we'll service this interrupt before the next one, and there will be no race condition
@@ -205,8 +265,8 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
     app_message_outbox_begin(&iter);
 
     // Add a key-value pair
-    dict_write_uint8(iter, 0, 0);
-
+    dict_write_uint8(iter, 1, 16);
+    
     // Send the message!
     app_message_outbox_send();
   }
@@ -228,7 +288,6 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     switch(t->key) {
 
     case KEY_TIME:
-      //snprintf(time_layer_buffer, sizeof(time_layer_buffer), "%s", t->value->c_string);
       break;
     case KEY_TICKS:
       pull_time = (int)t->value->uint32;
@@ -263,12 +322,18 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
 static void init() {
   // Create main Window element and assign to pointer
   s_main_window = window_create();
+  s_field_window = window_create();
   window_set_fullscreen(s_main_window, true);
 
   // Set handlers to manage the elements inside the Window
   window_set_window_handlers(s_main_window, (WindowHandlers) {
     .load = main_window_load,
     .unload = main_window_unload
+  });
+  
+  window_set_window_handlers(s_field_window, (WindowHandlers) {
+    .load = field_window_load,
+    .unload = field_window_unload
   });
 
   // Show the Window on the watch, with animated=true

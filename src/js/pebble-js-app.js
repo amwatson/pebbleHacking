@@ -16,7 +16,7 @@ var xhrPost = function (url, data) {
 
 function pullTime() {
   // Construct URL
-  var url = "http://128.237.171.113:1337/";
+  var url = "http://localhost:1337/";
   console.log("url is" + url);
   // Send request to website
   xhrRequest(url, 'GET', 
@@ -34,18 +34,16 @@ function pullTime() {
       // Send to Pebble
       Pebble.sendAppMessage(dictionary,
         function(e) {
-          console.log("Weather info sent to Pebble successfully!");
+          
         },
         function(e) {
           console.log("Error sending weather info to Pebble!");
         }
       );
+      
     }      
   );
-  
-  xhrPost(url, JSON.stringify({time:1200}));
-  
-  
+   
 }
 
 // Listen for when the watchface is opened
@@ -63,5 +61,5 @@ Pebble.addEventListener('appmessage',
   function(e) {
     console.log("AppMessage received!");
     pullTime();
-  }                     
+  }    
 );
