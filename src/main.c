@@ -7,23 +7,25 @@
 static Window *s_main_window;
 static Window *s_field_window;
 static TextLayer *s_time_layer;
-
+static TextLayer *s_field_layer;
 static GFont s_time_font;
-
+static GFont s_field_font;
 static BitmapLayer *s_background_layer;
 static GBitmap *s_background_bitmap;
+
+int choosing_flag = 0;
 
 // we don't have a race because we assume the handler takes less than a minute, and we perform the update before we parse
 int pull_time; // stores last time pulled (number of minutes TODO -- what do we do at midnight?)
 int num_seconds; // number of seconds since pull
+int time_guess;
 // TODO -- deal with midnight
 
 
-static void update_time() {
+static void update_time(int time_cur) {
 
   // Create a long-lived buffer
   static char buffer[] = "00:00:00";
-  int time_cur = pull_time + num_seconds;
   int hour = (time_cur/(60*60));
   int minute = (time_cur%(60*60)/60);
   int second = (time_cur%(60*60))%60;
@@ -46,6 +48,7 @@ static void main_down_click_handler(ClickRecognizerRef recognizer, void *context
 
 static void main_select_raw_down_handler(ClickRecognizerRef recognizer, void *context) {
   // Show the Window on the watch, with animated=true
+  window_stack_remove(s_main_window, false);
   window_stack_push(s_field_window, true);
 }
 static void main_select_raw_up_handler(ClickRecognizerRef recognizer, void *context) {
@@ -56,41 +59,110 @@ static void main_back_handler(ClickRecognizerRef recognizer, void *context) {
   
 }
 
+static void field_up_click_handler(ClickRecognizerRef recognizer, void *context) {
+    time_guess+=60;     
+    update_time(time_guess);
+}
 
+static void field_down_click_handler(ClickRecognizerRef recognizer, void *context) {
+    time_guess-=60;     
+    update_time(time_guess);
+}
+
+static void field_select_raw_down_handler(ClickRecognizerRef recognizer, void *context) {
+    
+}
+
+static void field_select_raw_up_handler(ClickRecognizerRef recognizer, void *context) {
+  
+}
+
+static void field_back_handler(ClickRecognizerRef recognizer, void *context) {
+   window_stack_remove(s_field_window, false);
+  window_stack_push(s_main_window, true);
+}
 static void main_config_provider(void *context) {
   window_single_click_subscribe(BUTTON_ID_UP, main_up_click_handler);
   window_single_click_subscribe(BUTTON_ID_DOWN, main_down_click_handler);
   window_raw_click_subscribe(BUTTON_ID_SELECT, main_select_raw_down_handler, main_select_raw_up_handler, NULL);
   window_single_click_subscribe(BUTTON_ID_BACK, main_back_handler);
 }
+
+static void field_config_provider(void *context) {
+  window_single_click_subscribe(BUTTON_ID_UP, field_up_click_handler);
+  window_single_click_subscribe(BUTTON_ID_DOWN, field_down_click_handler);
+  window_raw_click_subscribe(BUTTON_ID_SELECT, field_select_raw_down_handler, field_select_raw_up_handler, NULL); 
+  window_single_click_subscribe(BUTTON_ID_BACK, field_back_handler);
+}
+
 static void field_window_load(Window *window) {
+  choosing_flag = 1;
  // Here we load the bitmap assets
   // resource_init_current_app must be called before all asset loading
   window_set_fullscreen(s_field_window, true);
+  time_guess = pull_time + num_seconds;
 
   // Create time TextLayer
-  s_time_layer = text_layer_create(GRect(5, 75, 139, 50));
+  s_time_layer = text_layer_create(GRect(5, 60, 139, 50));
   text_layer_set_background_color(s_time_layer, GColorClear);
   text_layer_set_text_color(s_time_layer, GColorBlack);
   text_layer_set_text(s_time_layer, "Loading");
   
+   // Create time TextLayer
+  s_field_layer = text_layer_create(GRect(5, 10, 139, 50));
+  text_layer_set_background_color(s_field_layer, GColorClear);
+  text_layer_set_text_color(s_field_layer, GColorBlack);
+  text_layer_set_text(s_field_layer, "Enter Your Time Approximation");
+  
   //Create GFont
   s_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_PERFECT_DOS_32));
+  s_field_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_PERFECT_DOS_16));
 
   //Apply to TextLayer
   text_layer_set_font(s_time_layer, s_time_font);
   text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
+  
+  text_layer_set_font(s_field_layer, s_field_font);
+  text_layer_set_text_alignment(s_field_layer, GTextAlignmentCenter);
 
   // Add it as a child layer to the Window's root layer
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_time_layer));
   
+   // Add it as a child layer to the Window's root layer
+  layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_field_layer));
   
+  update_time(time_guess);
+}
+
+static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
+  // again, we assume our handler works in such a 
+  // way that we'll service this interrupt before the next one, and there will be no race condition
+  // We're not exactly writing robust code here
+  num_seconds++;
+  if (!((pull_time + num_seconds)%1) && !choosing_flag) {
+      update_time(pull_time + num_seconds);
+  }
+  
+  // Get time pull update every 10 minutes
+  if(tick_time->tm_min % 10 == 0) {
+    // Begin dictionary
+    DictionaryIterator *iter;
+    app_message_outbox_begin(&iter);
+
+    // Add a key-value pair
+    dict_write_uint8(iter, 1, 16);
+    
+    // Send the message!
+    app_message_outbox_send();
+  }
 }
 
 static void main_window_load(Window *window) {
-  
+  choosing_flag = 0;
+  // Register with TickTimerService
+  tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
   // Create time TextLayer
-  s_time_layer = text_layer_create(GRect(5, 75, 139, 50));
+  s_time_layer = text_layer_create(GRect(5, 60, 139, 50));
   text_layer_set_background_color(s_time_layer, GColorClear);
   text_layer_set_text_color(s_time_layer, GColorBlack);
   text_layer_set_text(s_time_layer, "Loading");
@@ -107,7 +179,7 @@ static void main_window_load(Window *window) {
   
   
   // Make sure the time is displayed from the start
-  update_time();
+  update_time(pull_time + num_seconds);
 }
 
 static void main_window_unload(Window *window) {
@@ -140,28 +212,6 @@ static void field_window_unload(Window *window) {
   
 }
 
-static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
-  // again, we assume our handler works in such a 
-  // way that we'll service this interrupt before the next one, and there will be no race condition
-  // We're not exactly writing robust code here
-  num_seconds++;
-  if (!((pull_time + num_seconds)%5)) {
-      update_time();
-  }
-  
-  // Get time pull update every 10 minutes
-  if(tick_time->tm_min % 10 == 0) {
-    // Begin dictionary
-    DictionaryIterator *iter;
-    app_message_outbox_begin(&iter);
-
-    // Add a key-value pair
-    dict_write_uint8(iter, 1, 16);
-    
-    // Send the message!
-    app_message_outbox_send();
-  }
-}
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   // Store incoming information
@@ -194,7 +244,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     t = dict_read_next(iterator);
   }
   
-  update_time();
+  update_time(pull_time + num_seconds);
 }
 
 static void inbox_dropped_callback(AppMessageResult reason, void *context) {
@@ -223,6 +273,7 @@ static void init() {
   });
   
   window_set_click_config_provider(s_main_window, main_config_provider);
+  window_set_click_config_provider(s_field_window, field_config_provider);
   
   window_set_window_handlers(s_field_window, (WindowHandlers) {
     .load = field_window_load,
@@ -231,9 +282,7 @@ static void init() {
 
   // Show the Window on the watch, with animated=true
   window_stack_push(s_main_window, true);
-  
-  // Register with TickTimerService
-  tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
+
   
   // Register callbacks
   app_message_register_inbox_received(inbox_received_callback);
