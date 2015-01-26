@@ -1,7 +1,9 @@
 {
     "appKeys": {
         "KEY_TICKS": 1,
-        "KEY_TIME": 0
+        "KEY_TIME": 0,
+        "message": 3,
+        "status": 2
     },
     "capabilities": [
         "location"
@@ -12,24 +14,8 @@
     "resources": {
         "media": [
             {
-                "file": "images/white.png",
-                "name": "IMAGE_WHITE",
-                "type": "png"
-            },
-            {
-                "file": "images/black.png",
-                "name": "IMAGE_BLACK",
-                "type": "png"
-            },
-            {
-                "file": "images/background.png",
-                "name": "IMAGE_BACKGROUND",
-                "type": "png"
-            },
-            {
-                "compatibility": "2.7",
                 "file": "fonts/perfect-dos-vga.ttf",
-                "name": "FONT_PERFECT_DOS_32",
+                "name": "FONT_GOTHIC_24",
                 "type": "font"
             },
             {
@@ -39,9 +25,25 @@
                 "type": "font"
             },
             {
+                "compatibility": "2.7",
                 "file": "fonts/perfect-dos-vga.ttf",
-                "name": "FONT_GOTHIC_24",
+                "name": "FONT_PERFECT_DOS_32",
                 "type": "font"
+            },
+            {
+                "file": "images/background.png",
+                "name": "IMAGE_BACKGROUND",
+                "type": "png"
+            },
+            {
+                "file": "images/black.png",
+                "name": "IMAGE_BLACK",
+                "type": "png"
+            },
+            {
+                "file": "images/white.png",
+                "name": "IMAGE_WHITE",
+                "type": "png"
             }
         ]
     },

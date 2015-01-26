@@ -1,3 +1,5 @@
+var url = "http://128.237.172.249:1337/";
+
 var xhrRequest = function (url, type, callback) {
   var xhr = new XMLHttpRequest();
   xhr.onload = function () {
@@ -15,9 +17,6 @@ var xhrPost = function (url, data) {
 
 
 function pullTime() {
-  // Construct URL
-  var url = "http://128.237.172.249:1337/";
-  console.log("url is " + url);
   // Send request to website
   xhrRequest(url, 'GET', 
     function(responseText) {
@@ -59,8 +58,17 @@ Pebble.addEventListener('ready',
 Pebble.addEventListener('appmessage',
   function(e) {
     console.log("Received Status: " + e.payload.status);
+    if (typeof(e.payload.status) == 'number') {
+        console.log("here");
+        var new_time = (e.payload.status).toString();
+      xhrPost(url, new_time);
+    }
+   // var request = "\{\"main\"\:\{\"ticks\"\:".concat(new_time).concat("\}\}");
+    
+      
+    
+    
     pullTime();
   }    
 );
-
 

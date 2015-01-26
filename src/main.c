@@ -4,6 +4,11 @@
 #define KEY_TIME 0
 #define KEY_TICKS 1
   
+enum {
+	STATUS_KEY = 2,	
+	MESSAGE_KEY = 3
+};
+  
 static Window *s_main_window;
 static Window *s_field_window;
 
@@ -29,7 +34,7 @@ void send_message(void){
 	DictionaryIterator *iter;
 	
 	app_message_outbox_begin(&iter);
-	dict_write_uint8(iter, KEY_TIME, 0x1);
+	dict_write_uint32(iter, STATUS_KEY, 1);
 	
 	dict_write_end(iter);
   	app_message_outbox_send();
@@ -63,9 +68,10 @@ static void main_select_raw_down_handler(ClickRecognizerRef recognizer, void *co
  
 }
 static void main_select_raw_up_handler(ClickRecognizerRef recognizer, void *context) {
-   // Show the Window on the watch, with animated=true
+  send_message();
   window_stack_remove(s_main_window, false);
   window_stack_push(s_field_window, true);
+  
 }
 
 static void field_up_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -232,9 +238,6 @@ static void field_window_unload(Window *window) {
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   // Store incoming information
   
-  
-  static char time_layer_buffer[32];
-  
   // Read first item
   
   Tuple *t = dict_read_first(iterator);
@@ -243,16 +246,12 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   while(t != NULL) {
     // Which key was received?
     switch(t->key) {
-
-    case KEY_TIME:
-      break;
     case KEY_TICKS:
       pull_time = (int)t->value->uint32;
       num_seconds = 0;
-      snprintf(time_layer_buffer, sizeof(time_layer_buffer), "%d", pull_time);
+      update_time(pull_time + num_seconds);
       break;
     default:
-      APP_LOG(APP_LOG_LEVEL_ERROR, "Key %d not recognized!", (int)t->key);
       break;
     }
 
@@ -260,7 +259,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     t = dict_read_next(iterator);
   }
   
-  update_time(pull_time + num_seconds);
+  
 }
 
 static void inbox_dropped_callback(AppMessageResult reason, void *context) {
