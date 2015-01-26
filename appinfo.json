@@ -37,6 +37,11 @@
                 "file": "fonts/perfect-dos-vga.ttf",
                 "name": "FONT_PERFECT_DOS_16",
                 "type": "font"
+            },
+            {
+                "file": "fonts/perfect-dos-vga.ttf",
+                "name": "FONT_GOTHIC_24",
+                "type": "font"
             }
         ]
     },

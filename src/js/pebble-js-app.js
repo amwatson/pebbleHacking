@@ -16,14 +16,13 @@ var xhrPost = function (url, data) {
 
 function pullTime() {
   // Construct URL
-  var url = "http://localhost:1337/";
-  console.log("url is" + url);
+  var url = "http://128.237.172.249:1337/";
+  console.log("url is " + url);
   // Send request to website
   xhrRequest(url, 'GET', 
     function(responseText) {
       // responseText contains a JSON object with time info
       var json = JSON.parse(responseText);
-
       
       var ticks = json.main.ticks; 
       // Assemble dictionary using our keys
@@ -59,7 +58,9 @@ Pebble.addEventListener('ready',
 // Listen for when an AppMessage is received
 Pebble.addEventListener('appmessage',
   function(e) {
-    console.log("AppMessage received!");
+    console.log("Received Status: " + e.payload.status);
     pullTime();
   }    
 );
+
+

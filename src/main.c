@@ -6,10 +6,13 @@
   
 static Window *s_main_window;
 static Window *s_field_window;
+
 static TextLayer *s_time_layer;
 static TextLayer *s_field_layer;
+
 static GFont s_time_font;
 static GFont s_field_font;
+
 static BitmapLayer *s_background_layer;
 static GBitmap *s_background_bitmap;
 
@@ -21,6 +24,16 @@ int num_seconds; // number of seconds since pull
 int time_guess;
 // TODO -- deal with midnight
 
+// Write message to buffer & send
+void send_message(void){
+	DictionaryIterator *iter;
+	
+	app_message_outbox_begin(&iter);
+	dict_write_uint8(iter, KEY_TIME, 0x1);
+	
+	dict_write_end(iter);
+  	app_message_outbox_send();
+}
 
 static void update_time(int time_cur) {
 
@@ -47,16 +60,12 @@ static void main_down_click_handler(ClickRecognizerRef recognizer, void *context
 }
 
 static void main_select_raw_down_handler(ClickRecognizerRef recognizer, void *context) {
-  // Show the Window on the watch, with animated=true
-  window_stack_remove(s_main_window, false);
-  window_stack_push(s_field_window, true);
+ 
 }
 static void main_select_raw_up_handler(ClickRecognizerRef recognizer, void *context) {
-  
-}
-
-static void main_back_handler(ClickRecognizerRef recognizer, void *context) {
-  
+   // Show the Window on the watch, with animated=true
+  window_stack_remove(s_main_window, false);
+  window_stack_push(s_field_window, true);
 }
 
 static void field_up_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -65,8 +74,10 @@ static void field_up_click_handler(ClickRecognizerRef recognizer, void *context)
 }
 
 static void field_down_click_handler(ClickRecognizerRef recognizer, void *context) {
+  if (time_guess >= 60) {
     time_guess-=60;     
     update_time(time_guess);
+  }
 }
 
 static void field_select_raw_down_handler(ClickRecognizerRef recognizer, void *context) {
@@ -74,18 +85,20 @@ static void field_select_raw_down_handler(ClickRecognizerRef recognizer, void *c
 }
 
 static void field_select_raw_up_handler(ClickRecognizerRef recognizer, void *context) {
-  
+  window_stack_remove(s_field_window, true);
+  window_stack_push(s_main_window, true);
 }
 
 static void field_back_handler(ClickRecognizerRef recognizer, void *context) {
-   window_stack_remove(s_field_window, false);
+  window_stack_remove(s_field_window, false);
   window_stack_push(s_main_window, true);
 }
+
 static void main_config_provider(void *context) {
   window_single_click_subscribe(BUTTON_ID_UP, main_up_click_handler);
   window_single_click_subscribe(BUTTON_ID_DOWN, main_down_click_handler);
   window_raw_click_subscribe(BUTTON_ID_SELECT, main_select_raw_down_handler, main_select_raw_up_handler, NULL);
-  window_single_click_subscribe(BUTTON_ID_BACK, main_back_handler);
+
 }
 
 static void field_config_provider(void *context) {
@@ -96,6 +109,7 @@ static void field_config_provider(void *context) {
 }
 
 static void field_window_load(Window *window) {
+  
   choosing_flag = 1;
  // Here we load the bitmap assets
   // resource_init_current_app must be called before all asset loading
@@ -104,8 +118,8 @@ static void field_window_load(Window *window) {
 
   // Create time TextLayer
   s_time_layer = text_layer_create(GRect(5, 60, 139, 50));
-  text_layer_set_background_color(s_time_layer, GColorClear);
-  text_layer_set_text_color(s_time_layer, GColorBlack);
+  text_layer_set_background_color(s_time_layer, GColorBlack);
+  text_layer_set_text_color(s_time_layer, GColorClear);
   text_layer_set_text(s_time_layer, "Loading");
   
    // Create time TextLayer
@@ -159,8 +173,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
 static void main_window_load(Window *window) {
   choosing_flag = 0;
-  // Register with TickTimerService
-  tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
+ 
   // Create time TextLayer
   s_time_layer = text_layer_create(GRect(5, 60, 139, 50));
   text_layer_set_background_color(s_time_layer, GColorClear);
@@ -168,7 +181,7 @@ static void main_window_load(Window *window) {
   text_layer_set_text(s_time_layer, "Loading");
   
   //Create GFont
-  s_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_PERFECT_DOS_32));
+  s_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_GOTHIC_24));
 
   //Apply to TextLayer
   text_layer_set_font(s_time_layer, s_time_font);
@@ -181,6 +194,8 @@ static void main_window_load(Window *window) {
   // Make sure the time is displayed from the start
   update_time(pull_time + num_seconds);
 }
+
+
 
 static void main_window_unload(Window *window) {
   //Unload GFont
@@ -211,6 +226,7 @@ static void field_window_unload(Window *window) {
   text_layer_destroy(s_time_layer);
   
 }
+
 
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
@@ -282,6 +298,9 @@ static void init() {
 
   // Show the Window on the watch, with animated=true
   window_stack_push(s_main_window, true);
+  
+   // Register with TickTimerService
+  tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
 
   
   // Register callbacks
@@ -292,6 +311,7 @@ static void init() {
   
   // Open AppMessage
   app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+  send_message();
 }
 
 static void deinit() {
