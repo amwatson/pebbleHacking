@@ -1,6 +1,5 @@
 #include <pebble.h>
   
-
 #define KEY_TIME 0
 #define KEY_TICKS 1
   
@@ -46,11 +45,11 @@ static void update_time(int time_cur) {
   static char buffer[] = "00:00:00";
   int hour = (time_cur/(60*60));
   int minute = (time_cur%(60*60)/60);
-  int second = (time_cur%(60*60))%60;
+ // int second = (time_cur%(60*60))%60;
   if (minute < 10) {
-    snprintf(buffer, sizeof(buffer), "%d:%0d:%d", hour, minute, second);
+    snprintf(buffer, sizeof(buffer), "%d:%d", hour, minute);
   } else {
-    snprintf(buffer, sizeof(buffer), "%d:%d:%d", hour, minute, second); 
+    snprintf(buffer, sizeof(buffer), "%d:%d", hour, minute); 
   }
   // Display this time on the TextLayer
   text_layer_set_text(s_time_layer, buffer);
@@ -117,7 +116,7 @@ static void field_config_provider(void *context) {
 static void field_window_load(Window *window) {
   
   choosing_flag = 1;
- // Here we load the bitmap assets
+  // Here we load the bitmap assets
   // resource_init_current_app must be called before all asset loading
   window_set_fullscreen(s_field_window, true);
   time_guess = pull_time + num_seconds;
@@ -135,8 +134,8 @@ static void field_window_load(Window *window) {
   text_layer_set_text(s_field_layer, "Enter Your Time Approximation");
   
   //Create GFont
-  s_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_PERFECT_DOS_32));
-  s_field_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_PERFECT_DOS_16));
+  s_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_GOTHIC_32));
+  s_field_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_GOTHIC_16));
 
   //Apply to TextLayer
   text_layer_set_font(s_time_layer, s_time_font);
@@ -187,7 +186,7 @@ static void main_window_load(Window *window) {
   text_layer_set_text(s_time_layer, "Loading");
   
   //Create GFont
-  s_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_GOTHIC_24));
+  s_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_PACIFICO_32));
 
   //Apply to TextLayer
   text_layer_set_font(s_time_layer, s_time_font);

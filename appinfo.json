@@ -14,20 +14,18 @@
     "resources": {
         "media": [
             {
-                "file": "fonts/perfect-dos-vga.ttf",
-                "name": "FONT_GOTHIC_24",
+                "file": "fonts/Pacifico.ttf",
+                "name": "FONT_PACIFICO_32",
                 "type": "font"
             },
             {
-                "compatibility": "2.7",
                 "file": "fonts/perfect-dos-vga.ttf",
-                "name": "FONT_PERFECT_DOS_16",
+                "name": "FONT_GOTHIC_16",
                 "type": "font"
             },
             {
-                "compatibility": "2.7",
                 "file": "fonts/perfect-dos-vga.ttf",
-                "name": "FONT_PERFECT_DOS_32",
+                "name": "FONT_GOTHIC_32",
                 "type": "font"
             },
             {
