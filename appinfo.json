@@ -15,17 +15,12 @@
         "media": [
             {
                 "file": "fonts/Pacifico.ttf",
+                "name": "FONT_PACIFICO_16",
+                "type": "font"
+            },
+            {
+                "file": "fonts/Pacifico.ttf",
                 "name": "FONT_PACIFICO_32",
-                "type": "font"
-            },
-            {
-                "file": "fonts/perfect-dos-vga.ttf",
-                "name": "FONT_GOTHIC_16",
-                "type": "font"
-            },
-            {
-                "file": "fonts/perfect-dos-vga.ttf",
-                "name": "FONT_GOTHIC_32",
                 "type": "font"
             },
             {

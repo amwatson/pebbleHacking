@@ -3,6 +3,9 @@
 #define KEY_TIME 0
 #define KEY_TICKS 1
   
+#define POST_UPDATE_SEC 10;
+#define READ_UPDATE_SEC 10;
+  
 enum {
 	STATUS_KEY = 2,	
 	MESSAGE_KEY = 3
@@ -25,18 +28,20 @@ int choosing_flag = 0;
 // we don't have a race because we assume the handler takes less than a minute, and we perform the update before we parse
 int pull_time; // stores last time pulled (number of minutes TODO -- what do we do at midnight?)
 int num_seconds; // number of seconds since pull
-int time_guess;
+int time_guess = 0;
 // TODO -- deal with midnight
 
 // Write message to buffer & send
-void send_message(void){
+void send_message(int data){
+
 	DictionaryIterator *iter;
 	
 	app_message_outbox_begin(&iter);
-	dict_write_uint32(iter, STATUS_KEY, 1);
+	dict_write_uint32(iter, STATUS_KEY, data);
 	
 	dict_write_end(iter);
-  	app_message_outbox_send();
+  APP_LOG(APP_LOG_LEVEL_INFO, "Sending");
+  app_message_outbox_send();
 }
 
 static void update_time(int time_cur) {
@@ -45,11 +50,11 @@ static void update_time(int time_cur) {
   static char buffer[] = "00:00:00";
   int hour = (time_cur/(60*60));
   int minute = (time_cur%(60*60)/60);
- // int second = (time_cur%(60*60))%60;
+  int second = (time_cur%(60*60))%60;
   if (minute < 10) {
-    snprintf(buffer, sizeof(buffer), "%d:%d", hour, minute);
+    snprintf(buffer, sizeof(buffer), "%d:%d:%d", hour, minute, second);
   } else {
-    snprintf(buffer, sizeof(buffer), "%d:%d", hour, minute); 
+    snprintf(buffer, sizeof(buffer), "%d:%d:%d", hour, minute, second); 
   }
   // Display this time on the TextLayer
   text_layer_set_text(s_time_layer, buffer);
@@ -67,7 +72,6 @@ static void main_select_raw_down_handler(ClickRecognizerRef recognizer, void *co
  
 }
 static void main_select_raw_up_handler(ClickRecognizerRef recognizer, void *context) {
-  send_message();
   window_stack_remove(s_main_window, false);
   window_stack_push(s_field_window, true);
   
@@ -90,6 +94,7 @@ static void field_select_raw_down_handler(ClickRecognizerRef recognizer, void *c
 }
 
 static void field_select_raw_up_handler(ClickRecognizerRef recognizer, void *context) {
+  send_message(time_guess);
   window_stack_remove(s_field_window, true);
   window_stack_push(s_main_window, true);
 }
@@ -134,8 +139,8 @@ static void field_window_load(Window *window) {
   text_layer_set_text(s_field_layer, "Enter Your Time Approximation");
   
   //Create GFont
-  s_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_GOTHIC_32));
-  s_field_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_GOTHIC_16));
+  s_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_PACIFICO_32));
+  s_field_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_PACIFICO_16));
 
   //Apply to TextLayer
   text_layer_set_font(s_time_layer, s_time_font);
@@ -158,9 +163,15 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   // way that we'll service this interrupt before the next one, and there will be no race condition
   // We're not exactly writing robust code here
   num_seconds++;
+  if (!((pull_time + num_seconds)%5) && !choosing_flag) {
+    
+      window_stack_remove(s_main_window, false);
+      window_stack_push(s_field_window, true);
+  }
   if (!((pull_time + num_seconds)%1) && !choosing_flag) {
       update_time(pull_time + num_seconds);
   }
+
   
   // Get time pull update every 10 minutes
   if(tick_time->tm_min % 10 == 0) {
@@ -309,7 +320,6 @@ static void init() {
   
   // Open AppMessage
   app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
-  send_message();
 }
 
 static void deinit() {

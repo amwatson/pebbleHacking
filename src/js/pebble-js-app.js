@@ -32,7 +32,7 @@ function pullTime() {
       // Send to Pebble
       Pebble.sendAppMessage(dictionary,
         function(e) {
-          
+            console.log("successful GET");
         },
         function(e) {
           console.log("Error sending weather info to Pebble!");
@@ -58,13 +58,16 @@ Pebble.addEventListener('ready',
 Pebble.addEventListener('appmessage',
   function(e) {
     console.log("Received Status: " + e.payload.status);
-    if (typeof(e.payload.status) == 'number') {        
+    if (typeof(e.payload.status) == 'number') {
+      if (e.payload.status > 0) {        
         var new_time = (e.payload.status).toString();
         var request = "\{\"main\"\:\{\"ticks\"\:".concat(new_time).concat("\}\}");
         xhrPost(url, request);
+        console.log("successful POST");
+      } 
+      pullTime();
+      
     }
-  
-    pullTime();
   }    
 );
 
